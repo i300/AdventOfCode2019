@@ -3,14 +3,14 @@ use std::io::BufReader;
 use std::io::Result;
 use std::io::prelude::*;
 
-use self::Day;
+use crate::days::Day;
 
 pub struct One {
 }
 
 impl Day for One {
-    fn new() -> DayOne {
-        DayOne {}
+    fn new() -> One {
+        One {}
     }
 
     fn run() -> Result<String> {
@@ -35,6 +35,6 @@ impl Day for One {
             sum += result;
         }
 
-        Ok(sum.to_string());
+        Ok(sum.to_string())
     }
 }
