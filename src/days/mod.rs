@@ -1,8 +1,8 @@
-use std::error::Error;
-
 pub mod one;
+pub mod two;
+
+use crate::Result;
 
 pub trait Day {
-    fn new(filename: &'static str) -> Self;
-    fn run(&self) -> Result<String, Box<dyn Error>>;
+    fn run(&self) -> Result<String>;
 }

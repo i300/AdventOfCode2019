@@ -3,31 +3,27 @@ use std::io::BufReader;
 use std::io::prelude::*;
 
 use crate::days::Day;
+use crate::Result;
 
 pub struct One {
     filename: &'static str
 }
 
 impl One {
+    pub fn new(filename: &'static str) -> One {
+        One { filename }
+    }
+
     fn read_file(&self) -> std::io::Result<Vec<String>> {
         let file = File::open(self.filename)?;
         let reader = BufReader::new(file);
-        let mut lines: Vec<String> = Vec::new();
-
-        for line in reader.lines() {
-            lines.push(line?);
-        }
-
-        Ok(lines)
+        reader.lines().collect()
     }
 }
 
 impl Day for One {
-    fn new(filename: &'static str) -> One {
-        One { filename }
-    }
 
-    fn run(&self) -> Result<String, Box<dyn std::error::Error>> {
+    fn run(&self) -> Result<String> {
         let lines = self.read_file()?;
 
         let mut sum = 0;
