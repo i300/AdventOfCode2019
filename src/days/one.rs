@@ -1,7 +1,3 @@
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
-
 use crate::days::Day;
 use crate::Result;
 
@@ -13,18 +9,12 @@ impl One {
     pub fn new(filename: &'static str) -> One {
         One { filename }
     }
-
-    fn read_file(&self) -> std::io::Result<Vec<String>> {
-        let file = File::open(self.filename)?;
-        let reader = BufReader::new(file);
-        reader.lines().collect()
-    }
 }
 
 impl Day for One {
-
     fn run(&self) -> Result<String> {
-        let lines = self.read_file()?;
+        let contents = crate::util::read_file(self.filename)?;
+        let lines = contents.lines();
 
         let mut sum = 0;
         for line in lines {

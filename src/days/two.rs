@@ -2,28 +2,24 @@ use crate::days::Day;
 use crate::StringError;
 use crate::Result;
 
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
-
 /* -- Main Type -- */
 pub struct Two {
   filename: &'static str
 }
 
-fn get_value(stack: &Vec<u32>, ptr: usize) -> Result<u32> {
-  match stack.get(ptr) {
+fn get_value(memory: &Vec<u32>, ptr: usize) -> Result<u32> {
+  match memory.get(ptr) {
     Some(v) => Ok(*v),
-    None => Err(Box::new(StringError("Tried to read value out of bounds.".to_string())))
+    None => Err(Box::new(StringError::new("Tried to read value out of bounds.".to_string())))
   }
 }
 
-fn set_value(stack: &mut Vec<u32>, ptr: usize, new: u32) -> Result<()> {
-  if let Some(v) = stack.get_mut(ptr) {
+fn set_value(memory: &mut Vec<u32>, ptr: usize, new: u32) -> Result<()> {
+  if let Some(v) = memory.get_mut(ptr) {
     *v = new;
     Ok(())
   } else {
-    return Err(Box::new(StringError("Tried to set out-of-bounds value.".to_string())));
+    return Err(Box::new(StringError::new("Tried to set out-of-bounds value.".to_string())));
   }
 }
 
@@ -32,59 +28,71 @@ impl Two {
     Two { filename }
   }
 
-  fn read_file(&self) -> std::io::Result<String> {
-    let file = File::open(self.filename)?;
-    let mut reader = BufReader::new(file);
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    Ok(contents)
-  }
-
-  fn add(&self, stack: &mut Vec<u32>, ptr: usize) -> Result<()> {
-    let a_addr = get_value(stack, ptr + 1)?;
-    let b_addr = get_value(stack, ptr + 2)?;
-    let a = get_value(stack, a_addr as usize)?;
-    let b = get_value(stack, b_addr as usize)?;
-    let write_addr = get_value(stack, ptr + 3)?;
-    set_value(stack, write_addr as usize, a + b)?;
+  fn add(&self, memory: &mut Vec<u32>, ptr: usize) -> Result<()> {
+    let a_addr = get_value(memory, ptr + 1)?;
+    let b_addr = get_value(memory, ptr + 2)?;
+    let a = get_value(memory, a_addr as usize)?;
+    let b = get_value(memory, b_addr as usize)?;
+    let write_addr = get_value(memory, ptr + 3)?;
+    set_value(memory, write_addr as usize, a + b)?;
 
     Ok(())
   }
 
-  fn mul(&self, stack: &mut Vec<u32>, ptr: usize) -> Result<()> {
-    let a_addr = get_value(stack, ptr + 1)?;
-    let b_addr = get_value(stack, ptr + 2)?;
-    let a = get_value(stack, a_addr as usize)?;
-    let b = get_value(stack, b_addr as usize)?;
-    let write_addr = get_value(stack, ptr + 3)?;
-    set_value(stack, write_addr as usize, a * b)?;
+  fn mul(&self, memory: &mut Vec<u32>, ptr: usize) -> Result<()> {
+    let a_addr = get_value(memory, ptr + 1)?;
+    let b_addr = get_value(memory, ptr + 2)?;
+    let a = get_value(memory, a_addr as usize)?;
+    let b = get_value(memory, b_addr as usize)?;
+    let write_addr = get_value(memory, ptr + 3)?;
+    set_value(memory, write_addr as usize, a * b)?;
 
+    Ok(())
+  }
+
+  fn execute(&self, memory: &mut Vec<u32>) -> Result<()> {
+    let mut ptr = 0;
+    loop {
+      if ptr >= memory.len() {
+        return Err(Box::new(StringError::new("Stack pointer pointed out of bounds.".to_string())));
+      }
+      let code = memory.get(ptr);
+      match code {
+        Some(1) => self.add(memory, ptr)?,
+        Some(2) => self.mul(memory, ptr)?,
+        Some(99) => break,
+        Some(op) => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
+        None => return Err(Box::new(StringError::new("Accessed an out-of-bounds index".to_string()))),
+      };
+      ptr += 4;
+    }
     Ok(())
   }
 }
 
 impl Day for Two {
   fn run(&self) -> Result<String> {
-    let contents = self.read_file()?;
-    let mut stack: Vec<u32> = match contents.split(",").map(|s| s.parse::<u32>()).collect() {
+    let contents = crate::util::read_file(self.filename)?;
+    let memory: Vec<u32> = match contents.split(",").map(|s| s.parse::<u32>()).collect() {
       Ok(s) => s,
       Err(e) => return Err(Box::new(e))
     };
-    let mut ptr = 0;
-    loop {
-      if ptr >= stack.len() {
-        return Err(Box::new(StringError("Stack pointer pointed out of bounds.".to_string())));
+    // Part 1
+    // self.execute(&mut memory)?;
+    // Ok(memory[0].to_string())
+    // Part 2
+    let target_value = 19690720;
+    for noun in 0..100 {
+      for verb in 0..100 {
+        let mut instance_memory = memory.clone();
+        set_value(&mut instance_memory, 1, noun)?;
+        set_value(&mut instance_memory, 2, verb)?;
+        self.execute(&mut instance_memory)?;
+        if instance_memory[0] == target_value {
+          return Ok((100 * noun + verb).to_string());
+        }
       }
-      let code = stack.get(ptr);
-      match code {
-        Some(1) => self.add(&mut stack, ptr)?,
-        Some(2) => self.mul(&mut stack, ptr)?,
-        Some(99) => break,
-        Some(op) => return Err(Box::new(StringError(format!("Invalid opcode found: {}.", op)))),
-        None => return Err(Box::new(StringError("Accessed an out-of-bounds index".to_string()))),
-      };
-      ptr += 4;
     }
-    Ok(stack[0].to_string())
+    Ok("No value found.".to_string())
   }
 }
