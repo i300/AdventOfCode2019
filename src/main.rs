@@ -1,5 +1,5 @@
 mod days;
-use days::{Day, one::One, two::Two};
+use days::{Day, one::One, two::Two, three::Three};
 
 mod util;
 use util::{Result, StringError};
@@ -8,6 +8,7 @@ fn get_day(num: u32) -> Option<Box<dyn Day>> {
     match num {
         1 => Some(Box::new(One::new("day1.txt"))),
         2 => Some(Box::new(Two::new("day2.txt"))),
+        3 => Some(Box::new(Three::new("day3.txt"))),
         _ => None
     }
 }
