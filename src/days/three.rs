@@ -107,16 +107,17 @@ impl Day for Three {
     }
 
     // Part 1
-    // let mut smallest_dist = i64::max_value();
-    // for x in intersections {
-    //   let dist = manhattan(x.0);
-    //   if dist < smallest_dist {
-    //     smallest_dist = dist;
-    //   }
-    // }
+    let mut smallest_dist = i64::max_value();
+    for x in intersections.iter() {
+      let dist = manhattan(x.0);
+      if dist < smallest_dist {
+        smallest_dist = dist;
+      }
+    }
 
+    // Part 2
     let mut smallest_steps = i64::max_value();
-    for x in intersections {
+    for x in intersections.iter() {
       let steps = x.1;
       if steps < smallest_steps {
         smallest_steps = steps;
