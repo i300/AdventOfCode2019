@@ -48,10 +48,11 @@ fn intersection(a: (Point,Point), b: (Point,Point)) -> Option<Point> {
   }
 }
 
-fn line_points(input: &str) -> Result<Vec<Point>> {
+fn line_points(input: &str) -> Result<Vec<(Point, i64)>> {
   let moves: Vec<String> = input.split(",").map(|s| s.to_string()).collect();
-  let mut points: Vec<Point> = Vec::new();
+  let mut points: Vec<(Point, i64)> = Vec::new();
   let mut current_coord = (0, 0);
+  let mut current_steps = 0;
   for op in moves {
     let dir = match op.chars().next() {
       Some('U') => (0, 1),
@@ -63,16 +64,21 @@ fn line_points(input: &str) -> Result<Vec<Point>> {
     };
 
     let value = (&op[1..]).parse::<i64>()?;
+    current_steps += value;
     current_coord = (current_coord.0 + dir.0 * value, current_coord.1 + dir.1 * value);
-    points.push(current_coord);
+    points.push((current_coord, current_steps));
   };
 
   Ok(points)
 }
 
+fn dist(a: Point, b: Point) -> i64 {
+  (((a.0 - b.0).pow(2) + (a.1 - b.1).pow(2)) as f64).sqrt().floor() as i64
+}
+
 impl Day for Three {
   fn run(&self) -> Result<String> {
-    let mut points_vec: Vec<Vec<Point>> = Vec::new();
+    let mut points_vec: Vec<Vec<(Point, i64)>> = Vec::new();
 
     let contents = crate::util::read_file(self.filename)?;
     let lines = contents.lines();
@@ -81,29 +87,41 @@ impl Day for Three {
       points_vec.push(points);
     }
 
-    let mut intersections: Vec<Point> = Vec::new();
+    let mut intersections: Vec<(Point, i64)> = Vec::new();
     let first_points = &points_vec[0];
     let second_points = &points_vec[1];
     for i in 1..first_points.len() {
       for j in 1..second_points.len() {
-        let a0 = first_points[i-1];
-        let a1 = first_points[i];
-        let b0 = second_points[j-1];
-        let b1 = second_points[j];
+        let a0_steps = first_points[i-1].1;
+        let a0 = first_points[i-1].0;
+        let a1 = first_points[i].0;
+        
+        let b0_steps = second_points[j-1].1;
+        let b0 = second_points[j-1].0;
+        let b1 = second_points[j].0;
         if let Some(x) = intersection((a0, a1), (b0, b1)) {
-          intersections.push(x);
+          let steps = a0_steps + b0_steps + dist(a0, x) + dist(b0, x);
+          intersections.push((x, steps));
         }
       }
     }
 
-    let mut smallest_dist = i64::max_value();
-    for point in intersections {
-      let dist = manhattan(point);
-      if dist < smallest_dist {
-        smallest_dist = dist;
+    // Part 1
+    // let mut smallest_dist = i64::max_value();
+    // for x in intersections {
+    //   let dist = manhattan(x.0);
+    //   if dist < smallest_dist {
+    //     smallest_dist = dist;
+    //   }
+    // }
+
+    let mut smallest_steps = i64::max_value();
+    for x in intersections {
+      let steps = x.1;
+      if steps < smallest_steps {
+        smallest_steps = steps;
       }
     }
-    
-    Ok(format!("{}", smallest_dist))
+    Ok(format!("{}", smallest_steps))
   }
 }
