@@ -1,5 +1,6 @@
 use crate::days::Day;
 use crate::Result;
+use std::collections::HashMap;
 
 pub struct Four {
   filename: &'static str
@@ -13,15 +14,30 @@ impl Four {
 
 fn has_adjacent(n: u32) -> Option<()> {
     let str_value = n.to_string();
+    let mut adj_chars: HashMap<char, u32> = HashMap::new();
     let mut chars = str_value.chars();
     let mut last_ch = chars.next()?;
     for ch in chars {
         if ch == last_ch {
-            return Some(());
+            if let Some(val) = adj_chars.get(&ch) {
+                adj_chars.insert(ch, val + 1);
+            } else {
+                adj_chars.insert(ch, 1);
+            }
         }
         last_ch = ch;
-    };
-    None
+    }
+    if adj_chars.keys().any(|k| {
+        if let Some(v) = adj_chars.get(k) {
+            *v == 2
+        } else {
+            false
+        }
+    }) {
+        Some(())
+    } else {
+        None
+    }
 }
 
 fn doesnt_decrease(n: u32) -> Option<()> {
@@ -50,8 +66,8 @@ impl Day for Four {
 
         let mut possible_values: Vec<u32> = Vec::new();
         for n in low..high {
-            if let Some(_) = has_adjacent(n) {
-                if let Some(_) = doesnt_decrease(n) {
+            if let Some(_) = doesnt_decrease(n) {
+                if let Some(_) = has_adjacent(n) {
                     possible_values.push(n);
                 }
             }
