@@ -16,13 +16,14 @@ impl Two {
 impl Day for Two {
   fn run(&self) -> Result<String> {
     let contents = crate::util::read_file(self.filename)?;
-    let memory: Vec<u32> = match contents.split(",").map(|s| s.parse::<u32>()).collect() {
+    let memory: Vec<i32> = match contents.split(",").map(|s| s.parse::<i32>()).collect() {
       Ok(s) => s,
       Err(e) => return Err(Box::new(e))
     };
     // Part 1
-    // self.execute(&mut memory)?;
-    // Ok(memory[0].to_string())
+    // let mut computer = IntcodeComputer::new(&memory);
+    // computer.execute()?;
+    // Ok(computer.get_value(0)?.to_string())
     // Part 2
     let target_value = 19690720;
     for noun in 0..100 {
