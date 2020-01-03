@@ -3,12 +3,13 @@ use crate::Result;
 
 pub struct IntcodeComputer {
   memory: Vec<i32>,
+  iostream: Vec<i32>,
   pc: usize
 }
 
 impl IntcodeComputer {
   pub fn new(memory: &Vec<i32>) -> IntcodeComputer {
-    IntcodeComputer { memory: memory.clone(), pc: 0 }
+    IntcodeComputer { memory: memory.clone(), iostream: Vec::new(), pc: 0 }
   }
 
   pub fn get_value(&self, ptr: usize) -> Result<i32> {
@@ -27,11 +28,28 @@ impl IntcodeComputer {
     }
   }
 
+  pub fn read(&mut self) -> i32 {
+    self.iostream.remove(0)
+  }
+
+  pub fn write(&mut self, i: i32) {
+    self.iostream.push(i);
+  }
+
+  fn resolve_instr(&self) -> Result<i32> {
+    let instruction = self.get_value(self.pc)?;
+    let instr_str = instruction.to_string();
+    if instr_str.len() == 1 {
+      return Ok(instruction);
+    }
+    Ok(instr_str[instr_str.len()-2..].parse::<i32>()?)
+  }
+
   fn resolve_param(&self, param: i32, param_index: u8) -> Result<i32> {
     let instruction = self.get_value(self.pc)?;
     let instr_str = instruction.to_string();
     let mut instr_chars = instr_str.chars();
-    for _ in 0..(param_index + 2) {
+    for _ in 0..(param_index + 1) {
       instr_chars.next();
     }
 
@@ -41,7 +59,7 @@ impl IntcodeComputer {
     }
   }
 
-  fn add(&mut self) -> Result<()> {
+  fn instr_add(&mut self) -> Result<()> {
     let a_addr = self.get_value(self.pc + 1)?;
     let b_addr = self.get_value(self.pc + 2)?;
     let a = self.resolve_param(a_addr, 0)?;
@@ -53,7 +71,7 @@ impl IntcodeComputer {
     Ok(())
   }
 
-  fn mul(&mut self) -> Result<()> {
+  fn isntr_mul(&mut self) -> Result<()> {
     let a_addr = self.get_value(self.pc + 1)?;
     let b_addr = self.get_value(self.pc + 2)?;
     let a = self.resolve_param(a_addr, 0)?;
@@ -65,18 +83,38 @@ impl IntcodeComputer {
     Ok(())
   }
 
+  fn instr_input(&mut self) -> Result<()> {
+    let addr = self.get_value(self.pc + 1)?;
+    let val = self.read();
+    self.set_value(addr as usize, val)?;
+    self.pc += 2;
+
+    Ok(())
+  }
+
+  fn instr_output(&mut self) -> Result<()> {
+    let addr = self.get_value(self.pc + 1)?;
+    let val = self.resolve_param(addr, 0)?;
+    self.write(val);
+    self.pc += 2;
+
+    Ok(())
+  }
+
   pub fn execute(&mut self) -> Result<()> {
     loop {
       if self.pc >= self.memory.len() {
         return Err(Box::new(StringError::new("Stack pointer pointed out of bounds.".to_string())));
       }
-      let instr = self.memory.get(self.pc);
+      let instr = self.resolve_instr()?;
+      println!("{}",instr);
       match instr {
-        Some(1) => self.add()?,
-        Some(2) => self.mul()?,
-        Some(99) => break,
-        Some(op) => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
-        None => return Err(Box::new(StringError::new("Accessed an out-of-bounds index".to_string()))),
+        1 => self.instr_add()?,
+        2 => self.isntr_mul()?,
+        3 => self.instr_input()?,
+        4 => self.instr_output()?,
+        99 => break,
+        op => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
       };
     }
     Ok(())

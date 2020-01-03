@@ -1,4 +1,5 @@
 use crate::days::Day;
+use crate::computer::IntcodeComputer;
 use crate::Result;
 
 pub struct Five {
@@ -14,25 +15,14 @@ impl Five {
 impl Day for Five {
   fn run(&self) -> Result<String> {
     let contents = crate::util::read_file(self.filename)?;
-    let lines = contents.lines();
-
-    let mut sum = 0;
-    for line in lines {
-      let value = line.parse::<i64>()?;
-      let mut result = value / 3 - 2;
-      
-      let mut new_mass = result / 3 - 2;
-      loop {
-        result += new_mass;
-        new_mass = new_mass / 3 - 2;
-        if new_mass <= 0 {
-          break;
-        }
-      }
-      
-      sum += result;
-    }
-
-    Ok(sum.to_string())
+    let memory: Vec<i32> = match contents.split(",").map(|s| s.parse::<i32>()).collect() {
+      Ok(s) => s,
+      Err(e) => return Err(Box::new(e))
+    };
+    // Part 1
+    let mut computer = IntcodeComputer::new(&memory);
+    computer.write(1);
+    computer.execute()?;
+    Ok(computer.get_value(0)?.to_string())
   }
 }
