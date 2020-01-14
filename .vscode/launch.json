@@ -6,7 +6,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceRoot}/target/debug/adventofcode.exe",
-            "args": ["4"],
+            "args": ["5"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],
