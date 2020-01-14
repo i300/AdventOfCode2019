@@ -21,8 +21,8 @@ impl Day for Five {
     };
     // Part 1
     let mut computer = IntcodeComputer::new(&memory);
-    computer.write(1);
+    computer.write(5); // write 1 for pt 1, write 5 for pt2
     computer.execute()?;
-    Ok(computer.get_value(0)?.to_string())
+    Ok(computer.read().to_string())
   }
 }

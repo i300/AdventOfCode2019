@@ -29,10 +29,13 @@ impl IntcodeComputer {
   }
 
   pub fn read(&mut self) -> i32 {
-    self.iostream.remove(0)
+    let val = self.iostream.remove(0);
+    println!("O {}", val);
+    val
   }
 
   pub fn write(&mut self, i: i32) {
+    println!("I {}", i);
     self.iostream.push(i);
   }
 
@@ -45,15 +48,12 @@ impl IntcodeComputer {
     Ok(instr_str[instr_str.len()-2..].parse::<i32>()?)
   }
 
-  fn resolve_param(&self, param: i32, param_index: u8) -> Result<i32> {
+  fn resolve_param(&self, param: i32, param_index: usize) -> Result<i32> {
     let instruction = self.get_value(self.pc)?;
     let instr_str = instruction.to_string();
-    let mut instr_chars = instr_str.chars();
-    for _ in 0..(param_index + 1) {
-      instr_chars.next();
-    }
+    let mut instr_chars = instr_str.chars().rev();
 
-    match instr_chars.next() {
+    match instr_chars.nth(param_index + 2) {
       Some('1') => Ok(param),
       _ => Ok(self.get_value(param as usize)?)
     }
@@ -84,19 +84,71 @@ impl IntcodeComputer {
   }
 
   fn instr_input(&mut self) -> Result<()> {
-    let addr = self.get_value(self.pc + 1)?;
+    let param = self.get_value(self.pc + 1)?;
     let val = self.read();
-    self.set_value(addr as usize, val)?;
+    self.set_value(param as usize, val)?;
     self.pc += 2;
 
     Ok(())
   }
 
   fn instr_output(&mut self) -> Result<()> {
-    let addr = self.get_value(self.pc + 1)?;
-    let val = self.resolve_param(addr, 0)?;
+    let param = self.get_value(self.pc + 1)?;
+    let val = self.resolve_param(param, 0)?;
     self.write(val);
     self.pc += 2;
+
+    Ok(())
+  }
+
+  fn instr_jnz(&mut self) -> Result<()> {
+    let cond_addr = self.get_value(self.pc + 1)?;
+    let loc_addr = self.get_value(self.pc + 2)?;
+    let cond = self.resolve_param(cond_addr, 0)?;
+    let addr = self.resolve_param(loc_addr, 1)?;
+    if cond != 0 {
+      self.pc = addr as usize;
+    } else {
+      self.pc += 3;
+    }
+
+    Ok(())
+  }
+
+  fn instr_jz(&mut self) -> Result<()> {
+    let cond_addr = self.get_value(self.pc + 1)?;
+    let loc_addr = self.get_value(self.pc + 2)?;
+    let cond = self.resolve_param(cond_addr, 0)?;
+    let addr = self.resolve_param(loc_addr, 1)?;
+    if cond == 0 {
+      self.pc = addr as usize;
+    } else {
+      self.pc += 3;
+    }
+
+    Ok(())
+  }
+
+  fn instr_lt(&mut self) -> Result<()> {
+    let a_addr = self.get_value(self.pc + 1)?;
+    let b_addr = self.get_value(self.pc + 2)?;
+    let target_addr = self.get_value(self.pc + 3)?;
+    let a = self.resolve_param(a_addr, 0)?;
+    let b = self.resolve_param(b_addr, 1)?;
+    self.set_value(target_addr as usize, if a < b { 1 } else { 0 })?;
+    self.pc += 4;
+
+    Ok(())
+  }
+
+  fn instr_eq(&mut self) -> Result<()> {
+    let a_addr = self.get_value(self.pc + 1)?;
+    let b_addr = self.get_value(self.pc + 2)?;
+    let target_addr = self.get_value(self.pc + 3)?;
+    let a = self.resolve_param(a_addr, 0)?;
+    let b = self.resolve_param(b_addr, 1)?;
+    self.set_value(target_addr as usize, if a == b { 1 } else { 0 })?;
+    self.pc += 4;
 
     Ok(())
   }
@@ -107,12 +159,15 @@ impl IntcodeComputer {
         return Err(Box::new(StringError::new("Stack pointer pointed out of bounds.".to_string())));
       }
       let instr = self.resolve_instr()?;
-      println!("{}",instr);
       match instr {
         1 => self.instr_add()?,
         2 => self.isntr_mul()?,
         3 => self.instr_input()?,
         4 => self.instr_output()?,
+        5 => self.instr_jnz()?,
+        6 => self.instr_jz()?,
+        7 => self.instr_lt()?,
+        8 => self.instr_eq()?,
         99 => break,
         op => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
       };
