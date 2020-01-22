@@ -21,6 +21,10 @@ impl StringError {
   pub fn new(error: String) -> StringError {
     StringError(error)
   }
+
+  pub fn from(error: &str) -> StringError {
+    StringError(error.to_string())
+  }
 }
 
 impl fmt::Display for StringError {
