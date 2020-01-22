@@ -1,15 +1,15 @@
 use crate::StringError;
 use crate::Result;
 
-pub struct IntcodeComputer {
-  memory: Vec<i32>,
+pub struct IntcodeComputer<'a> {
+  memory: &'a mut Vec<i32>,
   iostream: Vec<i32>,
   pc: usize
 }
 
-impl IntcodeComputer {
-  pub fn new(memory: &Vec<i32>) -> IntcodeComputer {
-    IntcodeComputer { memory: memory.clone(), iostream: Vec::new(), pc: 0 }
+impl IntcodeComputer<'_> {
+  pub fn new(memory: &mut Vec<i32>) -> IntcodeComputer {
+    IntcodeComputer { memory: memory, iostream: Vec::new(), pc: 0 }
   }
 
   pub fn get_value(&self, ptr: usize) -> Result<i32> {
@@ -28,14 +28,11 @@ impl IntcodeComputer {
     }
   }
 
-  pub fn read(&mut self) -> i32 {
-    let val = self.iostream.remove(0);
-    println!("O {}", val);
-    val
+  pub fn read(&mut self) -> Option<i32> {
+    self.iostream.pop()
   }
 
   pub fn write(&mut self, i: i32) {
-    println!("I {}", i);
     self.iostream.push(i);
   }
 
@@ -85,11 +82,13 @@ impl IntcodeComputer {
 
   fn instr_input(&mut self) -> Result<()> {
     let param = self.get_value(self.pc + 1)?;
-    let val = self.read();
-    self.set_value(param as usize, val)?;
-    self.pc += 2;
-
-    Ok(())
+    if let Some(val) = self.read() {
+      self.set_value(param as usize, val)?;
+      self.pc += 2;
+      Ok(())
+    } else {
+      Err(Box::new(StringError::new("Tried to read from empty iostream".to_string())))
+    }
   }
 
   fn instr_output(&mut self) -> Result<()> {

@@ -28,7 +28,8 @@ impl Day for Two {
     let target_value = 19690720;
     for noun in 0..100 {
       for verb in 0..100 {
-        let mut computer = IntcodeComputer::new(&memory);
+        let mut cloned_memory = memory.clone();
+        let mut computer = IntcodeComputer::new(&mut cloned_memory);
         computer.set_value(1, noun)?;
         computer.set_value(2, verb)?;
         computer.execute()?;
