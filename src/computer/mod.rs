@@ -29,11 +29,19 @@ impl IntcodeComputer<'_> {
   }
 
   pub fn read(&mut self) -> Option<i32> {
-    self.iostream.pop()
+    if self.iostream.len() > 0 {
+      Some(self.iostream.remove(0))
+    } else {
+      None
+    }
   }
 
   pub fn write(&mut self, i: i32) {
     self.iostream.push(i);
+  }
+
+  pub fn is_io_empty(&self) -> bool {
+    self.iostream.len() == 0
   }
 
   fn resolve_instr(&self) -> Result<i32> {
@@ -87,7 +95,9 @@ impl IntcodeComputer<'_> {
       self.pc += 2;
       Ok(())
     } else {
-      Err(Box::new(StringError::new("Tried to read from empty iostream".to_string())))
+      // If there is nothing on the iostream, NO-OP this cycle and try
+      // reading again next cycle (likely waiting for external input)
+      Ok(())
     }
   }
 
@@ -154,23 +164,30 @@ impl IntcodeComputer<'_> {
 
   pub fn execute(&mut self) -> Result<()> {
     loop {
-      if self.pc >= self.memory.len() {
-        return Err(Box::new(StringError::new("Stack pointer pointed out of bounds.".to_string())));
+      if self.execute_once()? {
+        break
       }
-      let instr = self.resolve_instr()?;
-      match instr {
-        1 => self.instr_add()?,
-        2 => self.isntr_mul()?,
-        3 => self.instr_input()?,
-        4 => self.instr_output()?,
-        5 => self.instr_jnz()?,
-        6 => self.instr_jz()?,
-        7 => self.instr_lt()?,
-        8 => self.instr_eq()?,
-        99 => break,
-        op => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
-      };
     }
     Ok(())
+  }
+
+  pub fn execute_once(&mut self) -> Result<bool> {
+    if self.pc >= self.memory.len() {
+      return Err(Box::new(StringError::new("Stack pointer pointed out of bounds.".to_string())));
+    }
+    let instr = self.resolve_instr()?;
+    match instr {
+      1 => self.instr_add()?,
+      2 => self.isntr_mul()?,
+      3 => self.instr_input()?,
+      4 => self.instr_output()?,
+      5 => self.instr_jnz()?,
+      6 => self.instr_jz()?,
+      7 => self.instr_lt()?,
+      8 => self.instr_eq()?,
+      99 => return Ok(true),
+      op => return Err(Box::new(StringError::new(format!("Invalid opcode found: {}.", op)))),
+    };
+    Ok(false)
   }
 }

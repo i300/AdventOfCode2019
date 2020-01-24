@@ -20,14 +20,19 @@ impl Day for Five {
       Ok(s) => s,
       Err(e) => return Err(Box::new(e))
     };
-    // Part 1
     let mut computer = IntcodeComputer::new(&mut memory);
-    computer.write(5); // write 1 for pt 1, write 5 for pt2
+    // computer.write(1); // Part 1
+    computer.write(5); // Part 2
     computer.execute()?;
-    if let Some(result) = computer.read() {
-      Ok(result.to_string())
-    } else {
-      Err(Box::new(StringError::new("Computer's iostream was empty".to_string())))
+
+    // Get result, which is the final diagnostic code
+    let mut last_result = 0;
+    while let Some(result) = computer.read() {
+      if result != 0 && !computer.is_io_empty() {
+        return Err(Box::new(StringError::new("Diagnostic test failed".to_string())))
+      }
+      last_result = result;
     }
+    Ok(last_result.to_string())
   }
 }

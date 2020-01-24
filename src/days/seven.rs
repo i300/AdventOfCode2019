@@ -22,11 +22,10 @@ fn compute_output(memory: &Vec<i32>, phases: &Vec<i32>) -> Result<i32> {
     let mut computer = IntcodeComputer::new(&mut new_memory);
 
     // Write the phase and the last output to the computer, then execute
-    computer.write(last_output);
     computer.write(*phase);
+    computer.write(last_output);
     computer.execute()?;
 
-    // Read from iostream until empty and write to last_output
     if let Some(output) = computer.read() {
       last_output = output;
     } else {
@@ -37,6 +36,14 @@ fn compute_output(memory: &Vec<i32>, phases: &Vec<i32>) -> Result<i32> {
   Ok(last_output)
 }
 
+fn compute_output_feedback(memory: &Vec<i32>, phases: &Vec<i32>) -> Result<i32> {
+  if phases.len() < 5 {
+    return Err(Box::new(StringError::from("Too few phases specified")));
+  }
+
+  Ok(0)
+}
+
 impl Day for Seven {
   fn run(&self) -> Result<String> {
     let contents = crate::util::read_file(self.filename)?;
@@ -45,6 +52,7 @@ impl Day for Seven {
       Err(e) => return Err(Box::new(e))
     };
 
+    // Part 1
     let mut input = vec![0,1,2,3,4];
     let heap = Heap::new(&mut input);
     let mut largest = i32::min_value();
